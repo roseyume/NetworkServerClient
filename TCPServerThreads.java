@@ -10,6 +10,9 @@ import java.nio.charset.StandardCharsets;
 class TCPServerThreads implements Runnable {
     private Socket socket;
     Message response;
+    boolean synReceived = false;
+    boolean endConnection = false;
+    String client;
 
     TCPServerThreads( Socket socket) {
         this.socket = socket;
@@ -18,59 +21,71 @@ class TCPServerThreads implements Runnable {
 
     public void run() {
         System.out.println("Running ");
-        while (true) {
+        while (!endConnection) {
 
-                DataOutputStream outToClient = null;
-                try {
-                    outToClient = new DataOutputStream(socket.getOutputStream());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                InputStream inToClient = null;
-                try {
-                    inToClient = socket.getInputStream();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                byte[] bytes = new byte[1024];
+            DataOutputStream outToClient = null;
+            byte[] buffer = null;
             try {
-                inToClient.read(bytes);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+                outToClient = new DataOutputStream(socket.getOutputStream());
+                InputStream inToClient = null;                
+                inToClient = socket.getInputStream();               
+                byte[] bytes = new byte[1024];           
+                inToClient.read(bytes);   
 
-            // read client request
+                // read client request
                 Message message = null;
-                try {
-                    message = new Message(new String(bytes, StandardCharsets.UTF_8));
-                } catch (ScriptException e) {
-                    e.printStackTrace();
-                }
-                System.out.println("Message request: " + message.data + "\n");
+                message = new Message(client, new String(bytes, StandardCharsets.UTF_8));
 
-            try {
-                response = solve(message);
-            } catch (ScriptException e) {
+                if(!synReceived)
+                {
+                    if(message.getSyn() == true)
+                    {
+                        //send syn-ack message to establish connection
+                        response = new Message(client, true, true, false);
+                        buffer = Double.toString(response.answer).getBytes();
+                    }
+                    else
+                    {
+                        System.out.println("Error. Invalid connection attempt");
+                        endConnection = true;
+                    }
+                }
+                else
+                {
+                    if(message.getFin() == true)
+                    {
+                        response = new Message(client, false, true, true);
+                        endConnection = true;
+                    }
+                    else
+                    {
+                        try{
+                            System.out.println("Message request: " + message.data + "\n");
+                            response = solve(message);
+                            buffer = Double.toString(response.answer).getBytes();
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                outToClient.write(buffer, 0, buffer.length);
+            } 
+            catch (IOException e) 
+            {
                 e.printStackTrace();
             }
-
-            final byte[] buffer = Double.toString(response.answer).getBytes();
-                System.out.print("SERVER RESPONSE: " + buffer);
-                try {
-                    outToClient.write(buffer, 0, buffer.length);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            System.out.println("Thread ended with client "+client);
         }
     }
 
-    public static Message solve(Message request) throws ScriptException {
+    public Message solve(Message request) throws ScriptException {
         ScriptEngineManager mgr = new ScriptEngineManager();
         ScriptEngine engine = mgr.getEngineByName("JavaScript");
         double resultNum = Double.parseDouble(engine.eval(request.data.trim()).toString());
-        Message response = new Message(request.data);
-        response.setAnswer(resultNum);
+        Message response = new Message(client, request.data, resultNum);
         return response;
     }
+
 }

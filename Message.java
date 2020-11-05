@@ -4,24 +4,75 @@ import javax.script.ScriptException;
 import java.io.*;
 import java.net.*; 
 
-class Message implements Serializable{ 
+class Message implements Serializable
+{ 
 
-    public int clientNum;
-    public String data;
-    public double answer;
+    String client;
+    String data;
+    double answer;
+
+    boolean syn;
+    boolean ack;
+    boolean fin;
     
-    public Message(String data) throws ScriptException {
+    //Syn or Fin Message
+    public Message(String client, boolean syn, boolean ack, boolean fin) 
+    {
+
+        this.client = client;
+        this.syn = syn;
+        this.ack = ack;
+        this.fin = fin;
+    }
+
+    //Request Message
+    public Message(String client, String data) 
+    {
+        this.client = client;
         this.data = data;
-        //this.answer = evaluate(data);
     }
 
-    public void setAnswer(double answer){
-        this.answer = answer;
+    //Server Response Message
+    public Message(String client, String data, double answer) 
+    {
+        this.client = client;
+        this.data = data;
     }
 
-    public double getAnswer(){
+    //Message
+    public Message(String data) 
+    {
+        this.data = data;
+    }
+
+    public String getClient()
+    {
+        return client;
+    }
+
+    public String getData()
+    {
+        return data;
+    }
+
+    public double getAnswer()
+    {
         return answer;
     }
 
+    public boolean getSyn()
+    {
+        return syn;
+    }
+
+    public boolean getAck()
+    {
+        return ack;
+    }
+
+    public boolean getFin()
+    {
+        return fin;
+    }
 
 }
