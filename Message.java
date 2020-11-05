@@ -37,6 +37,7 @@ class Message implements Serializable
     {
         this.client = client;
         this.data = data;
+        this.answer = answer;
     }
 
     //Message
@@ -60,17 +61,17 @@ class Message implements Serializable
         return answer;
     }
 
-    public boolean getSyn()
+    public boolean isSyn()
     {
         return syn;
     }
 
-    public boolean getAck()
+    public boolean isAck()
     {
         return ack;
     }
 
-    public boolean getFin()
+    public boolean isFin()
     {
         return fin;
     }
