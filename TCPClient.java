@@ -1,65 +1,49 @@
 import java.io.*;
 import java.net.*;
-import java.util.Scanner;
+import java.util.Random;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class TCPClient {
 
 	public static void main(String argv[]) throws Exception {
-		String input = "";
-		boolean exit = false;
-		String username = "";
-		Message message;
 		Socket clientSocket = new Socket("127.0.0.1", 6789);
 		DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
 		InputStream inFromServer = clientSocket.getInputStream();
-		
-		Scanner userInput = new Scanner(System.in);
+		Random rand = new Random();
 
-		System.out.println("Math Client Program");
-		System.out.println("Enter your username..."); //might want to randomly generate this instead
-		username = userInput.nextLine();
-		System.out.println("Hi "+username+"!");
+		System.out.println("Welcome to the Math Calculation Program!");
+		String ID = UUID.randomUUID().toString(); // randomly generated client ID
+		System.out.println("Your Client ID is: " + ID);
 
-		int attempt = 0;
+		// send connection request
+		int attempts = 0;
 		do
 		{
-			System.out.println("Connecting you to a math server...\n");
-			sendMessage(outToServer, new Message(username, true, false, false)); //Error sending syn message
-			attempt++;
-		} while (!receiveMessage(inFromServer).isSyn() && attempt <= 3);
+			System.out.println("\nConnecting you to the server...");
+			sendMessage(outToServer, new Message(ID, true, false, false)); 
+			attempts++;
+		} while (!receiveMessage(inFromServer).isSyn() && attempts <= 3); // error sending syn message
 
 		System.out.println("You're connected.\n");
 
+		// # of requests is random between 3 and 6
+		for(int i = rand.nextInt(4) + 3; i > 0; i--) {
+			String request = generateRandomEquation();
+			System.out.println("Request: " + request);
 
-		do {
-
-			System.out.println("Send a math request to the server? (Y/N)");
-			while (!((input = userInput.nextLine()).equals("Y") || input.equals("N"))) {
-				System.out.println("Input error. Try again.");
-				System.out.println("Send a math request to the server? (Y/N)");
-			}
-
-			if (input.equals("N")) {
-				//send fin message
-				message = new Message(username, false, false, true);
-				sendMessage(outToServer, message);
-				exit = true;
-				break;
-			} else {
-				System.out.println("Type your math request");
-				input = userInput.nextLine();
-				message = new Message(username, input);
-				sendMessage(outToServer, message);
-				Message reply = receiveMessage(inFromServer);
-				System.out.println("Math Server Calculation Reply: " + reply.answer);
-			}
-
+			sendMessage(outToServer, new Message(ID, request));
+			Message reply = receiveMessage(inFromServer);
+			System.out.println("Math Server Reply: " + reply.getAnswer() + "\n");
 		}
-		while (!exit);
 
-		System.out.println("Client closing");
+		// send disconnection request
+		System.out.println("Disconnecting you from the server...");
+		sendMessage(outToServer, new Message(ID, false, false, true));
+
+		System.out.println("You've been disconnected.");
 		clientSocket.close();
-
 	}
 
 	public static void sendMessage(OutputStream outputStream, Message message)
@@ -68,7 +52,7 @@ class TCPClient {
 		{
 			ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
 			ObjectOutputStream out = new ObjectOutputStream(byteOutStream);
-			
+
 			out.writeObject(message);
 			out.flush();
 			byte[] byteMessage = byteOutStream.toByteArray();
@@ -87,7 +71,7 @@ class TCPClient {
 		{
 			ByteArrayInputStream byteInStream;
 			ObjectInputStream in;
-			
+
 			byte[] bytes = new byte[1024];
 			inputStream.read(bytes);
 			byteInStream = new ByteArrayInputStream(bytes);
@@ -100,6 +84,76 @@ class TCPClient {
 		}
 		return null;
 	}
+
+	public static String generateRandomEquation() {
+		Random rand = new Random();
+
+		// add first random number 0-30
+		String equation = rand.nextInt(30) + "";
+
+		// add 1-4 more sets of a random number 0-30 and a random operator +,-,*,/
+		int numOps = rand.nextInt(4) + 1;
+		for(int i = 0; i < numOps; i++)
+			equation += " " + generateRandomOp(rand.nextInt(4)) + " " + rand.nextInt(30);
+
+		// insert sets of parentheses randomly based on # of operators (max 3 sets)
+		for(int i = rand.nextInt(Math.min(numOps, 4)); i > 0; i--) {
+			Matcher matcher = Pattern.compile("\\d+").matcher(equation);
+
+			int openParen = rand.nextInt(numOps); // choose nth number to open parentheses at randomly
+			int closeParen = rand.nextInt(numOps - openParen) + 1 + openParen; // choose nth number to close parentheses at randomly
+
+			// iterate over each number and add open/close parentheses
+			for (int n = 0; !matcher.hitEnd(); n++) {
+				matcher.find(n == 0 ? 0 : matcher.end());
+
+				if(n == openParen)
+					equation = insert(equation, '(', matcher.start());
+				if(n == closeParen)
+					equation = insert(equation, ')', matcher.end()+1);
+			}
+		}
+
+		// check for extraneous parentheses (does not eliminate all cases)
+		Matcher matcher = Pattern.compile("\\(\\d+\\)").matcher(equation); 			// (num) -> num
+		for(int j = 0; !matcher.hitEnd() ; j++) {
+			if(matcher.find(j == 0 ? 0 : matcher.end())) {
+				int start = matcher.start();
+				int end = matcher.end();
+				equation = equation.substring(0, start) + equation.substring(start+1, end-1) + equation.substring(end);
+			}
+		}
+
+		String middle = equation.substring(1, equation.length()-1);					// (num op num) -> num op num
+		if(equation.startsWith("(") && equation.endsWith(")") && !middle.contains("("))
+			equation = middle;
+
+		// check for divide by zero (does not eliminate all cases)
+		matcher = Pattern.compile("/ 0").matcher(equation); 
+		if(matcher.find())
+			equation = generateRandomEquation();
+
+		return equation;
+	}
+
+	public static String generateRandomOp(int num) {
+		switch (num) {
+		case 0:
+			return "+";
+		case 1:
+			return "-";
+		case 2:
+			return "*";
+		case 3:
+			return "/";
+		default:
+			return null;
+		}
+	}
+
+	public static String insert(String str, char c, int pos) {
+		StringBuilder sb = new StringBuilder(str);
+		sb.insert(pos, c);
+		return sb.toString();
+	}
 }
-
-

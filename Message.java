@@ -1,13 +1,7 @@
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.io.*;
-import java.net.*; 
 
-class Message implements Serializable
-{ 
-
-    String client;
+class Message implements Serializable {
+    String clientID;
     String data;
     double answer;
 
@@ -15,64 +9,53 @@ class Message implements Serializable
     boolean ack;
     boolean fin;
     
-    //Syn or Fin Message
-    public Message(String client, boolean syn, boolean ack, boolean fin) 
-    {
-
-        this.client = client;
+    // Syn or Fin Message
+    public Message(String clientID, boolean syn, boolean ack, boolean fin) {
+        this.clientID = clientID;
         this.syn = syn;
         this.ack = ack;
         this.fin = fin;
     }
 
-    //Request Message
-    public Message(String client, String data) 
-    {
-        this.client = client;
+    // Request Message
+    public Message(String clientID, String data) {
+        this.clientID = clientID;
         this.data = data;
     }
 
-    //Server Response Message
-    public Message(String client, String data, double answer) 
-    {
-        this.client = client;
+    // Server Response Message
+    public Message(String clientID, String data, double answer) {
+        this.clientID = clientID;
         this.data = data;
         this.answer = answer;
     }
 
-    //Message
-    public Message(String data) 
-    {
+    // Message
+    public Message(String data) {
         this.data = data;
     }
 
-    public String getClient()
-    {
-        return client;
+    public String getClientID() {
+        return clientID;
     }
 
-    public String getData()
-    {
+    public String getData() {
         return data;
     }
 
-    public double getAnswer()
-    {
+    public double getAnswer() {
         return answer;
     }
 
-    public boolean isSyn()
-    {
+    public boolean isSyn() {
         return syn;
     }
 
-    public boolean isAck()
-    {
+    public boolean isAck() {
         return ack;
     }
 
-    public boolean isFin()
-    {
+    public boolean isFin() {
         return fin;
     }
 

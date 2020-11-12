@@ -11,61 +11,70 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 class TCPServerThreads implements Runnable {
-	private Socket socket;
-	Message response;
+	Socket socket;
+	String clientID;
+
 	boolean synReceived = false;
 	boolean endConnection = false;
-	String client;
 
-	TCPServerThreads( Socket socket) {
+	SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
+	Date connectTime;
+	Date disconnectTime;
+
+	TCPServerThreads(Socket socket) {
 		this.socket = socket;
-		System.out.println("Creating ");
 	}
 
 	public void run() {
-		System.out.println("Running ");
 		while (!endConnection) {
 			try {
 				DataOutputStream outToClient = new DataOutputStream(socket.getOutputStream());
 				InputStream inToClient = socket.getInputStream();               
-				
-				Message message = receiveMessage(inToClient);
+
+				Message message = receiveMessage(inToClient); // receive message from client
+				Message response = null;
 
 				if(!synReceived) {
-					if(message.isSyn()) {
+					if(message.isSyn()) {	// connection request
+						connectTime = new Date();
 						synReceived = true;
-						
-						//send syn-ack message to establish connection
-						response = new Message(client, true, true, false);
+						clientID = message.getClientID();
+						response = new Message(clientID, true, true, false);					// send syn-ack
+						TCPServer.log(clientID + " has connected"); 							// log connection
 					}
 					else {
-						System.out.println("Error. Invalid connection attempt");
+						TCPServer.log("Error. Invalid connection attempt");						// log invalid connection attempt
 						endConnection = true;
 					}
 				}
 				else {
-					if(message.isFin()) {
-						response = new Message(client, false, true, true);
+					if(message.isFin()) {	// disconnection request
+						disconnectTime = new Date();
 						endConnection = true;
+						response = new Message(clientID, false, true, true);  					// send fin-ack
+						TCPServer.log(clientID + " has disconnected"); 							// log disconnection
+
+						long duration = (disconnectTime.getTime() - connectTime.getTime());
+						TCPServer.log(clientID + " was connected for " + duration + " ms\n"); 	// log connection duration
 					}
-					else {
-						try {
-							System.out.println("Message request: " + message.data + "\n");
-							response = solve(message);
-						} catch (ScriptException e) {
-							e.printStackTrace();
-						}
+					else {					// math request
+						response = solve(message);												// send answer
+						TCPServer.log(clientID + " request: " + message.getData()); 			// log math request
 					}
 				}
-				sendMessage(outToClient, response);
+
+				sendMessage(outToClient, response); // send response to client
 			} 
 			catch (IOException e) {
 				e.printStackTrace();
 			}
-			System.out.println("Thread ended with client "+client);
+			catch (ScriptException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -75,7 +84,7 @@ class TCPServerThreads implements Runnable {
 		{
 			ByteArrayOutputStream byteOutStream = new ByteArrayOutputStream();
 			ObjectOutputStream out = new ObjectOutputStream(byteOutStream);
-			
+
 			out.writeObject(message);
 			out.flush();
 			byte[] byteMessage = byteOutStream.toByteArray();
@@ -94,7 +103,7 @@ class TCPServerThreads implements Runnable {
 		{
 			ByteArrayInputStream byteInStream;
 			ObjectInputStream in;
-			
+
 			byte[] bytes = new byte[1024];
 			inputStream.read(bytes);
 			byteInStream = new ByteArrayInputStream(bytes);
@@ -107,14 +116,13 @@ class TCPServerThreads implements Runnable {
 		}
 		return null;
 	}
-	
+
 	public Message solve(Message request) throws ScriptException {
 		ScriptEngineManager mgr = new ScriptEngineManager();
 		ScriptEngine engine = mgr.getEngineByName("JavaScript");
 		double resultNum = Double.parseDouble(engine.eval(request.data.trim()).toString());
-		System.out.println("Result: " + resultNum);
-		
-		Message response = new Message(client, request.data, resultNum);
+
+		Message response = new Message(clientID, request.data, resultNum);
 		return response;
 	}
 
