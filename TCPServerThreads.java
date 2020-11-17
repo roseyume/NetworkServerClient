@@ -1,3 +1,39 @@
+/*
+    Rosie Wang, Agatha Lam, Sanjana Sankaran
+    CS 4390
+	TCPServerThreads.java
+		This program runs server threads. Each thread handles a client allowing the math server to handle multiple connections.
+		In reponse to connection requests, request messages, and disconnection requests, the server will sendP
+			- Connection Response (Syn-Ack)
+				-----------------------------
+				| clientID:	ID (copy)		|
+				| data:					   	|
+				| answer:					|
+				| syn: true					|
+				| ack: true					|
+				| fin: false				|
+				-----------------------------
+			- Response Message 
+				-----------------------------
+				| clientID:	ID	(copy)		|
+				| data:	request	(copy)		|   	
+				| answer: response			|
+				| syn: false				|
+				| ack: false				|
+				| fin: false				|	
+				-----------------------------
+			- Disconnection Response (Fin-Ack)
+				-----------------------------
+				| clientID:	ID	(copy)		|
+				| data:					   	|
+				| answer:					|
+				| syn: false				|	
+				| ack: true					|
+				| fin: true					|
+				-----------------------------
+
+*/
+
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
@@ -10,6 +46,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.io.BufferedWriter;
 import java.net.Socket;
 import java.util.Date;
 import java.text.SimpleDateFormat;
@@ -75,6 +112,14 @@ class TCPServerThreads implements Runnable {
 			catch (ScriptException e) {
 				e.printStackTrace();
 			}
+		}
+		try
+		{
+			socket.close();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
 		}
 	}
 

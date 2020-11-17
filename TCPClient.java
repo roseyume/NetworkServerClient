@@ -1,3 +1,41 @@
+/*
+    Rosie Wang, Agatha Lam, Sanjana Sankaran
+    CS 4390
+	TCPClient.java
+		This program simulates a client connecting to a math server. Each client is identifiable by a generated client id.
+		The client establishes a connection, sends 3-6 math requests before properly terminating its connection and ending 
+		the simulation. The client is able to send three kinds of messages:
+			- 	Connection Request (syn)
+				-----------------------------
+				| clientID:	ID				|
+				| data:					   	|
+				| answer:					|
+				| syn: true					|
+				| ack: false				|
+				| fin: false				|
+				-----------------------------
+			-	Request Message
+				-----------------------------
+				| clientID:	ID				|
+				| data:	request				|   	
+				| answer: 					|
+				| syn: false				|
+				| ack: false				|
+				| fin: false				|	
+				-----------------------------
+			- 	Disconnection Request (fin)
+				-----------------------------
+				| clientID:	ID				|
+				| data:					   	|
+				| answer:					|
+				| syn: false				|	
+				| ack: false				|
+				| fin: true					|
+				-----------------------------
+
+		To simulate multiple client connections more easily, the client program takes a waitTime arg (ms) at runtime. 
+*/
+
 import java.io.*;
 import java.net.*;
 import java.util.Random;
@@ -8,13 +46,30 @@ import java.util.regex.Pattern;
 class TCPClient {
 
 	public static void main(String argv[]) throws Exception {
+		int waitTime = 0; // wait time in ms
+		Message reply;
+
+		try
+		{
+			waitTime = Integer.parseInt(argv[0]);  
+		}
+		catch (ArrayIndexOutOfBoundsException e)
+		{
+			//If no wait time arg is given, no wait time is used to send math requests.
+		}
+		catch (IllegalArgumentException e)
+		{
+			System.out.println("Incorrect argument given for inbetween request wait time");
+			System.exit(0);
+		}
+
 		Socket clientSocket = new Socket("127.0.0.1", 6789);
 		DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
 		InputStream inFromServer = clientSocket.getInputStream();
 		Random rand = new Random();
 
 		System.out.println("Welcome to the Math Calculation Program!");
-		String ID = UUID.randomUUID().toString(); // randomly generated client ID
+		String ID = "client"+UUID.randomUUID().toString(); // randomly generated client ID
 		System.out.println("Your Client ID is: " + ID);
 
 		// send connection request
@@ -24,7 +79,14 @@ class TCPClient {
 			System.out.println("\nConnecting you to the server...");
 			sendMessage(outToServer, new Message(ID, true, false, false)); 
 			attempts++;
-		} while (!receiveMessage(inFromServer).isSyn() && attempts <= 3); // error sending syn message
+			reply = receiveMessage(inFromServer);
+		} while ((!reply.isSyn() || !reply.isAck()) && attempts <= 3); // error sending syn message
+
+		if(attempts >= 3)
+		{
+			System.out.println("Error: Cannot connect to math server.");
+			System.exit(1);
+		}
 
 		System.out.println("You're connected.\n");
 
@@ -34,13 +96,21 @@ class TCPClient {
 			System.out.println("Request: " + request);
 
 			sendMessage(outToServer, new Message(ID, request));
-			Message reply = receiveMessage(inFromServer);
+			reply = receiveMessage(inFromServer);
 			System.out.println("Math Server Reply: " + reply.getAnswer() + "\n");
+			Thread.sleep(waitTime);
+
 		}
 
 		// send disconnection request
 		System.out.println("Disconnecting you from the server...");
-		sendMessage(outToServer, new Message(ID, false, false, true));
+		
+		do
+		{
+			sendMessage(outToServer, new Message(ID, false, false, true));
+			reply = receiveMessage(inFromServer);
+		}
+		while(!reply.isFin() || !reply.isAck());
 
 		System.out.println("You've been disconnected.");
 		clientSocket.close();

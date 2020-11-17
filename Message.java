@@ -1,3 +1,10 @@
+/*
+    Rosie Wang, Agatha Lam, Sanjana Sankaran
+    CS 4390
+	Message.java
+		This class file handles message formats for communication protocols between the math client and server.
+
+*/
 import java.io.*;
 
 class Message implements Serializable {
