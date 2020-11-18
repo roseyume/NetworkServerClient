@@ -8,15 +8,10 @@
 
 */
 import java.net.*;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.FileHandler;
 import java.util.logging.*;
-import java.io.FileWriter;
-import java.io.BufferedWriter;
 import java.io.InputStream;
 
 class TCPServer {
@@ -41,10 +36,9 @@ class TCPServer {
     }
 
     public static void main(String argv[]) throws Exception {
-        ServerSocket welcomeSocket = new ServerSocket(6789);
-
+        @SuppressWarnings("resource")
+		ServerSocket welcomeSocket = new ServerSocket(6789);
         log("Server starting\n");
-        
         
         while (true) {
             Socket connectionSocket = welcomeSocket.accept();

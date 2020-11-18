@@ -2,8 +2,8 @@
     Rosie Wang, Agatha Lam, Sanjana Sankaran
     CS 4390
 	TCPServerThreads.java
-		This program runs server threads. Each thread handles a client allowing the math server to handle multiple connections.
-		In reponse to connection requests, request messages, and disconnection requests, the server will sendP
+		This class handles server threads. Each thread handles a client allowing the math server to handle multiple connections.
+		In response to connection requests, request messages, and disconnection requests, the server will send:
 			- Connection Response (Syn-Ack)
 				-----------------------------
 				| clientID:	ID (copy)		|
@@ -12,15 +12,6 @@
 				| syn: true					|
 				| ack: true					|
 				| fin: false				|
-				-----------------------------
-			- Response Message 
-				-----------------------------
-				| clientID:	ID	(copy)		|
-				| data:	request	(copy)		|   	
-				| answer: response			|
-				| syn: false				|
-				| ack: false				|
-				| fin: false				|	
 				-----------------------------
 			- Disconnection Response (Fin-Ack)
 				-----------------------------
@@ -31,7 +22,21 @@
 				| ack: true					|
 				| fin: true					|
 				-----------------------------
+			- Answer Response 
+				-----------------------------
+				| clientID:	ID	(copy)		|
+				| data:	request	(copy)		|   	
+				| answer: response			|
+				| syn: false				|
+				| ack: false				|
+				| fin: false				|	
+				-----------------------------
 
+			- Error Response
+				-----------------------------
+				| clientID:	ID (copy)		|
+				| err: true 			   	|
+				-----------------------------
 */
 
 import javax.script.ScriptEngine;
@@ -46,10 +51,8 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.BufferedWriter;
 import java.net.Socket;
 import java.util.Date;
-import java.text.SimpleDateFormat;
 
 class TCPServerThreads implements Runnable {
 	Socket socket;
@@ -58,7 +61,6 @@ class TCPServerThreads implements Runnable {
 	boolean synReceived = false;
 	boolean endConnection = false;
 
-	SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
 	Date connectTime;
 	Date disconnectTime;
 
@@ -81,10 +83,10 @@ class TCPServerThreads implements Runnable {
 						synReceived = true;
 						clientID = message.getClientID();
 						response = new Message(clientID, true, true, false);					// send syn-ack
-						TCPServer.log(clientID + " has connected"); 							// log connection
+						TCPServer.log(clientID + " has connected\n"); 							// log connection
 					}
 					else {
-						TCPServer.log("Error. Invalid connection attempt");						// log invalid connection attempt
+						TCPServer.log("Error. Invalid connection attempt\n");					// log invalid connection attempt
 						endConnection = true;
 					}
 				}
@@ -94,7 +96,7 @@ class TCPServerThreads implements Runnable {
 						disconnectTime = new Date();
 						endConnection = true;
 						response = new Message(clientID, false, true, true);  					// send fin-ack
-						TCPServer.log(clientID + " has disconnected"); 							// log disconnection
+						TCPServer.log(clientID + " has disconnected\n"); 						// log disconnection
 
 						long duration = (disconnectTime.getTime() - connectTime.getTime());
 						TCPServer.log(clientID + " was connected for " + duration + " ms\n"); 	// log connection duration
@@ -102,12 +104,13 @@ class TCPServerThreads implements Runnable {
 					else {					// math request
 						try
 						{
-							response = solve(message);												// send answer
-							TCPServer.log(clientID + " request: " + message.getData()); 			// log math request
+							response = solve(message);											// send answer
+							TCPServer.log(clientID + " request: " + message.getData() + "\n"); 	// log math request
 						}
 						catch (Exception e)
 						{
-							TCPServer.log("Error handling the following message from "+clientID+ "/n"+message.getData());
+							response = new Message(clientID, true);								// send error message
+							TCPServer.log("Error handling request from " + clientID + ": " + message.getData() + "\n"); // log error message
 						}
 					}
 				}
@@ -115,9 +118,6 @@ class TCPServerThreads implements Runnable {
 				sendMessage(outToClient, response); // send response to client
 			} 
 			catch (IOException e) {
-				e.printStackTrace();
-			}
-			catch (ScriptException e) {
 				e.printStackTrace();
 			}
 		}
