@@ -89,6 +89,7 @@ class TCPServerThreads implements Runnable {
 					}
 				}
 				else {
+					//initial connection was made
 					if(message.isFin()) {	// disconnection request
 						disconnectTime = new Date();
 						endConnection = true;
@@ -99,8 +100,15 @@ class TCPServerThreads implements Runnable {
 						TCPServer.log(clientID + " was connected for " + duration + " ms\n"); 	// log connection duration
 					}
 					else {					// math request
-						response = solve(message);												// send answer
-						TCPServer.log(clientID + " request: " + message.getData()); 			// log math request
+						try
+						{
+							response = solve(message);												// send answer
+							TCPServer.log(clientID + " request: " + message.getData()); 			// log math request
+						}
+						catch (Exception e)
+						{
+							TCPServer.log("Error handling the following message from "+clientID+ "/n"+message.getData());
+						}
 					}
 				}
 
@@ -113,6 +121,7 @@ class TCPServerThreads implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		
 		try
 		{
 			socket.close();
