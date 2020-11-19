@@ -2,11 +2,13 @@
     Rosie Wang, Agatha Lam, Sanjana Sankaran
     CS 4390
 	Message.java
-		This class file handles message formats for communication protocols between the math client and server.
+		This class details message formats for communication protocols between the math client and server.
 
 */
+
 import java.io.*;
 
+@SuppressWarnings("serial")
 class Message implements Serializable {
     String clientID;
     String data;
@@ -15,6 +17,7 @@ class Message implements Serializable {
     boolean syn;
     boolean ack;
     boolean fin;
+    boolean err;
     
     // Syn or Fin Message
     public Message(String clientID, boolean syn, boolean ack, boolean fin) {
@@ -24,7 +27,7 @@ class Message implements Serializable {
         this.fin = fin;
     }
 
-    // Request Message
+    // Client Request Message
     public Message(String clientID, String data) {
         this.clientID = clientID;
         this.data = data;
@@ -35,6 +38,13 @@ class Message implements Serializable {
         this.clientID = clientID;
         this.data = data;
         this.answer = answer;
+    }
+    
+    // Server Error Response Message
+    public Message(String clientID, String data, boolean err) {
+    	this.clientID = clientID;
+    	this.data = data;
+    	this.err = err;
     }
 
     // Message
@@ -66,4 +76,7 @@ class Message implements Serializable {
         return fin;
     }
 
+    public boolean isErr() {
+        return err;
+    }
 }

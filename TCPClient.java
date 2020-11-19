@@ -2,9 +2,11 @@
     Rosie Wang, Agatha Lam, Sanjana Sankaran
     CS 4390
 	TCPClient.java
-		This program simulates a client connecting to a math server. Each client is identifiable by a generated client id.
-		The client establishes a connection, sends 3-6 math requests before properly terminating its connection and ending 
-		the simulation. The client is able to send three kinds of messages:
+		This program simulates a client connecting to a math server. 
+		Each client is identifiable by a generated client ID.
+		The client establishes a connection, sends 3-6 math requests with delays of 0-3 seconds in between
+		before properly terminating its connection and ending the simulation.
+		The client is able to send three kinds of messages:
 			- 	Connection Request (syn)
 				-----------------------------
 				| clientID:	ID				|
@@ -13,6 +15,7 @@
 				| syn: true					|
 				| ack: false				|
 				| fin: false				|
+				| err: 						|
 				-----------------------------
 			-	Request Message
 				-----------------------------
@@ -21,7 +24,8 @@
 				| answer: 					|
 				| syn: false				|
 				| ack: false				|
-				| fin: false				|	
+				| fin: false				|
+				| err: 						|	
 				-----------------------------
 			- 	Disconnection Request (fin)
 				-----------------------------
@@ -31,42 +35,24 @@
 				| syn: false				|	
 				| ack: false				|
 				| fin: true					|
+				| err: 						|
 				-----------------------------
-
-		To simulate multiple client connections more easily, the client program takes a waitTime arg (ms) at runtime. 
 */
 
 import java.io.*;
 import java.net.*;
 import java.util.Random;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 class TCPClient {
+	static Random rand = new Random();
 
 	public static void main(String argv[]) throws Exception {
-		int waitTime = 0; // wait time in ms
-		Message reply;
-
-		try
-		{
-			waitTime = Integer.parseInt(argv[0]);  
-		}
-		catch (ArrayIndexOutOfBoundsException e)
-		{
-			//If no wait time arg is given, no wait time is used to send math requests.
-		}
-		catch (IllegalArgumentException e)
-		{
-			System.out.println("Incorrect argument given for inbetween request wait time");
-			System.exit(0);
-		}
 
 		Socket clientSocket = new Socket("127.0.0.1", 6789);
 		DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
 		InputStream inFromServer = clientSocket.getInputStream();
-		Random rand = new Random();
+		Message reply;
 
 		System.out.println("Welcome to the Math Calculation Program!");
 		String ID = "client"+UUID.randomUUID().toString(); // randomly generated client ID
@@ -92,14 +78,16 @@ class TCPClient {
 
 		// # of requests is random between 3 and 6
 		for(int i = rand.nextInt(4) + 3; i > 0; i--) {
-			String request = generateRandomEquation();
+			// generate a random equation with 1-4 operators
+			String request = generateRandomEquation(rand.nextInt(4) + 1, true); 
 			System.out.println("Request: " + request);
 
 			sendMessage(outToServer, new Message(ID, request));
 			reply = receiveMessage(inFromServer);
-			System.out.println("Math Server Reply: " + reply.getAnswer() + "\n");
-			Thread.sleep(waitTime);
-
+			System.out.println("Math Server Reply: " + 
+					(reply.isErr() ? "Server Error - Request Could Not Be Handled" : reply.getAnswer()) + "\n");
+			
+			Thread.sleep(rand.nextInt(3001)); // delay next request by a random amount of time 0-3000 ms
 		}
 
 		// send disconnection request
@@ -155,59 +143,28 @@ class TCPClient {
 		return null;
 	}
 
-	public static String generateRandomEquation() {
-		Random rand = new Random();
+	public static String generateRandomEquation(int numOps, boolean topLevel) {
+		if(numOps == 0) // return a random number 0-30
+			return rand.nextInt(31) + "";
+			
+		// determine number of operators on left (first) part
+		int numLeftOps = rand.nextInt(numOps);
+		String left = generateRandomEquation(numLeftOps, false);
+		String right = generateRandomEquation(numOps - numLeftOps - 1, false);
 
-		// add first random number 0-30
-		String equation = rand.nextInt(30) + "";
+		// combine left and right
+		String equation = left + " " + generateRandomOp() + " " + right;
 
-		// add 1-4 more sets of a random number 0-30 and a random operator +,-,*,/
-		int numOps = rand.nextInt(4) + 1;
-		for(int i = 0; i < numOps; i++)
-			equation += " " + generateRandomOp(rand.nextInt(4)) + " " + rand.nextInt(30);
-
-		// insert sets of parentheses randomly based on # of operators (max 3 sets)
-		for(int i = rand.nextInt(Math.min(numOps, 4)); i > 0; i--) {
-			Matcher matcher = Pattern.compile("\\d+").matcher(equation);
-
-			int openParen = rand.nextInt(numOps); // choose nth number to open parentheses at randomly
-			int closeParen = rand.nextInt(numOps - openParen) + 1 + openParen; // choose nth number to close parentheses at randomly
-
-			// iterate over each number and add open/close parentheses
-			for (int n = 0; !matcher.hitEnd(); n++) {
-				matcher.find(n == 0 ? 0 : matcher.end());
-
-				if(n == openParen)
-					equation = insert(equation, '(', matcher.start());
-				if(n == closeParen)
-					equation = insert(equation, ')', matcher.end()+1);
-			}
-		}
-
-		// check for extraneous parentheses (does not eliminate all cases)
-		Matcher matcher = Pattern.compile("\\(\\d+\\)").matcher(equation); 			// (num) -> num
-		for(int j = 0; !matcher.hitEnd() ; j++) {
-			if(matcher.find(j == 0 ? 0 : matcher.end())) {
-				int start = matcher.start();
-				int end = matcher.end();
-				equation = equation.substring(0, start) + equation.substring(start+1, end-1) + equation.substring(end);
-			}
-		}
-
-		String middle = equation.substring(1, equation.length()-1);					// (num op num) -> num op num
-		if(equation.startsWith("(") && equation.endsWith(")") && !middle.contains("("))
-			equation = middle;
-
-		// check for divide by zero (does not eliminate all cases)
-		matcher = Pattern.compile("/ 0").matcher(equation); 
-		if(matcher.find())
-			equation = generateRandomEquation();
-
+		// add optional parenthesis
+		if(!topLevel && rand.nextBoolean())
+			equation = "(" + equation +  ")";
+		
 		return equation;
 	}
 
-	public static String generateRandomOp(int num) {
-		switch (num) {
+	// generate a random operator +,-,*,/
+	public static String generateRandomOp() {
+		switch (rand.nextInt(4)) {
 		case 0:
 			return "+";
 		case 1:
@@ -219,11 +176,5 @@ class TCPClient {
 		default:
 			return null;
 		}
-	}
-
-	public static String insert(String str, char c, int pos) {
-		StringBuilder sb = new StringBuilder(str);
-		sb.insert(pos, c);
-		return sb.toString();
 	}
 }
