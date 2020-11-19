@@ -32,8 +32,6 @@
 				| ack: false				|
 				| fin: true					|
 				-----------------------------
-
-		To simulate multiple client connections more easily, the client program takes a waitTime arg (ms) at runtime. 
 */
 
 import java.io.*;
