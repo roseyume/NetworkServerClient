@@ -9,7 +9,7 @@ JC = javac
 
 #target entry for building .class files from .java files
 .java.class:
-        $(JC) $(JFLAGS) $*.java
+	$(JC) $(JFLAGS) $*.java
 
 CLASSES = \
         TCPServer.java \
@@ -21,5 +21,12 @@ default: classes
 
 classes: $(CLASSES:.java=.class)
 
+server: 
+	java TCPServer
+
+client: 
+	java TCPClient
+
 clean:
-        $(RM) *.class
+	$(RM) log.txt
+	$(RM) *.class

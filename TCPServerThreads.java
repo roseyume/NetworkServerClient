@@ -117,9 +117,7 @@ class TCPServerThreads implements Runnable {
 			catch (IOException e) {
 				e.printStackTrace();
 			}
-			catch (ScriptException e) {
-				e.printStackTrace();
-			}
+			
 		}
 		
 		try
