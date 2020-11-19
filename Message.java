@@ -2,9 +2,10 @@
     Rosie Wang, Agatha Lam, Sanjana Sankaran
     CS 4390
 	Message.java
-		This class file handles message formats for communication protocols between the math client and server.
+		This class details message formats for communication protocols between the math client and server.
 
 */
+
 import java.io.*;
 
 @SuppressWarnings("serial")
@@ -40,8 +41,9 @@ class Message implements Serializable {
     }
     
     // Server Error Response Message
-    public Message(String clientID, boolean err) {
+    public Message(String clientID, String data, boolean err) {
     	this.clientID = clientID;
+    	this.data = data;
     	this.err = err;
     }
 

@@ -2,7 +2,8 @@
     Rosie Wang, Agatha Lam, Sanjana Sankaran
     CS 4390
 	TCPServerThreads.java
-		This class handles server threads. Each thread handles a client allowing the math server to handle multiple connections.
+		This class handles server threads. 
+		Each thread handles a client allowing the math server to handle multiple connections.
 		In response to connection requests, request messages, and disconnection requests, the server will send:
 			- Connection Response (Syn-Ack)
 				-----------------------------
@@ -13,16 +14,8 @@
 				| ack: true					|
 				| fin: false				|
 				-----------------------------
-			- Disconnection Response (Fin-Ack)
-				-----------------------------
-				| clientID:	ID	(copy)		|
-				| data:					   	|
-				| answer:					|
-				| syn: false				|	
-				| ack: true					|
-				| fin: true					|
-				-----------------------------
-			- Answer Response 
+
+			- Math Response 
 				-----------------------------
 				| clientID:	ID	(copy)		|
 				| data:	request	(copy)		|   	
@@ -32,10 +25,25 @@
 				| fin: false				|	
 				-----------------------------
 
-			- Error Response
+			- Math Error Response
 				-----------------------------
 				| clientID:	ID (copy)		|
+				| data:	request	(copy)		|
+				| answer:					|
+				| syn: 						|	
+				| ack: 						|
+				| fin: 						|
 				| err: true 			   	|
+				-----------------------------
+				
+			- Disconnection Response (Fin-Ack)
+				-----------------------------
+				| clientID:	ID	(copy)		|
+				| data:					   	|
+				| answer:					|
+				| syn: false				|	
+				| ack: true					|
+				| fin: true					|
 				-----------------------------
 */
 
@@ -74,7 +82,7 @@ class TCPServerThreads implements Runnable {
 				DataOutputStream outToClient = new DataOutputStream(socket.getOutputStream());
 				InputStream inToClient = socket.getInputStream();               
 
-				Message message = receiveMessage(inToClient); // receive message from client
+				Message message = receiveMessage(inToClient); 	// receive message from client
 				Message response = null;
 
 				if(!synReceived) {
@@ -109,13 +117,13 @@ class TCPServerThreads implements Runnable {
 						}
 						catch (Exception e)
 						{
-							response = new Message(clientID, true);								// send error message
+							response = new Message(clientID, message.getData(), true);			// send error message
 							TCPServer.log("Error handling request from " + clientID + ": " + message.getData() + "\n"); // log error message
 						}
 					}
 				}
 
-				sendMessage(outToClient, response); // send response to client
+				sendMessage(outToClient, response); 			// send response to client
 			} 
 			catch (IOException e) {
 				e.printStackTrace();
@@ -171,13 +179,12 @@ class TCPServerThreads implements Runnable {
 		return null;
 	}
 
-	public Message solve(Message request) throws ScriptException {
+	public Message solve(Message message) throws ScriptException {
 		ScriptEngineManager mgr = new ScriptEngineManager();
 		ScriptEngine engine = mgr.getEngineByName("JavaScript");
-		double resultNum = Double.parseDouble(engine.eval(request.data.trim()).toString());
+		double resultNum = Double.parseDouble(engine.eval(message.getData().trim()).toString());
 
-		Message response = new Message(clientID, request.data, resultNum);
-		return response;
+		return new Message(clientID, message.getData(), resultNum);
 	}
 
 }

@@ -2,9 +2,11 @@
     Rosie Wang, Agatha Lam, Sanjana Sankaran
     CS 4390
 	TCPClient.java
-		This program simulates a client connecting to a math server. Each client is identifiable by a generated client id.
-		The client establishes a connection, sends 3-6 math requests before properly terminating its connection and ending 
-		the simulation. The client is able to send three kinds of messages:
+		This program simulates a client connecting to a math server. 
+		Each client is identifiable by a generated client ID.
+		The client establishes a connection, sends 3-6 math requests with delays of 0-3 seconds in between
+		before properly terminating its connection and ending the simulation.
+		The client is able to send three kinds of messages:
 			- 	Connection Request (syn)
 				-----------------------------
 				| clientID:	ID				|
@@ -13,6 +15,7 @@
 				| syn: true					|
 				| ack: false				|
 				| fin: false				|
+				| err: 						|
 				-----------------------------
 			-	Request Message
 				-----------------------------
@@ -21,7 +24,8 @@
 				| answer: 					|
 				| syn: false				|
 				| ack: false				|
-				| fin: false				|	
+				| fin: false				|
+				| err: 						|	
 				-----------------------------
 			- 	Disconnection Request (fin)
 				-----------------------------
@@ -31,6 +35,7 @@
 				| syn: false				|	
 				| ack: false				|
 				| fin: true					|
+				| err: 						|
 				-----------------------------
 */
 

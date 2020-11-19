@@ -2,11 +2,13 @@
     Rosie Wang, Agatha Lam, Sanjana Sankaran
     CS 4390
 	TCPServer.java
-        This program simulates a math server. The math server handles clients using TCPServerThreads which handles connections, disconnections,
-        math requests and calculations. Activities handled by the server are logged to log.txt. Log settings are handled in logging.properties
-        and can be modified to log to the command line.
-
+        This program simulates a math server. 
+        The math server handles clients using TCPServerThreads which handles connections, disconnections,
+        math requests and calculations. 
+        Activities handled by the server are logged to log.txt. 
+        Log settings are handled in logging.properties and can be modified to log to the command line.
 */
+
 import java.net.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,7 +34,6 @@ class TCPServer {
         {
             System.out.println("Log File error");
         }
-        
     }
 
     public static void main(String argv[]) throws Exception {
@@ -52,12 +53,6 @@ class TCPServer {
         {
             logger.log(Level.INFO,message);
         } 
-        catch (Exception e) {
-            
-        }
+        catch (Exception e) {	}
     }
-
 } 
- 
-
-           
