@@ -1,0 +1,12 @@
+[2020-11-19 20:27:28] Server starting
+ 
+[2020-11-19 20:27:31] client0741e62b-5bec-479f-8117-3fa4f9e50fe5 has connected 
+[2020-11-19 20:27:31] client0741e62b-5bec-479f-8117-3fa4f9e50fe5 request: 16 - 5 
+[2020-11-19 20:27:31] client0741e62b-5bec-479f-8117-3fa4f9e50fe5 request: 26 - 0 
+[2020-11-19 20:27:31] client0741e62b-5bec-479f-8117-3fa4f9e50fe5 request: 20 * 26 / (21 / 4) 
+[2020-11-19 20:27:31] client0741e62b-5bec-479f-8117-3fa4f9e50fe5 request: 25 + 1 / (0 / (2 * 3)) 
+[2020-11-19 20:27:31] client0741e62b-5bec-479f-8117-3fa4f9e50fe5 request: 7 + 4 - 23 
+[2020-11-19 20:27:31] client0741e62b-5bec-479f-8117-3fa4f9e50fe5 request: 2 + 3 - ((20 / 17)) + 23 
+[2020-11-19 20:27:31] client0741e62b-5bec-479f-8117-3fa4f9e50fe5 has disconnected 
+[2020-11-19 20:27:31] client0741e62b-5bec-479f-8117-3fa4f9e50fe5 was connected for 274 ms
+ 
